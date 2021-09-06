@@ -1,0 +1,14 @@
+{
+  "name": "nft-mining",
+  "version": "1.0.0",
+  "author": "yuming0x",
+  "description": "A proof of concept for mining erc20 token with nfts",
+  "dependencies": {
+    "dotenv-flow": "^3.2.0",
+    "ganache-core": "^2.11.2"
+  },
+  "devDependencies": {
+    "@truffle/hdwallet-provider": "^1.0.40",
+    "truffle": "^5.3.0"
+  }
+}
