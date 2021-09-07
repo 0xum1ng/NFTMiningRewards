@@ -54,7 +54,7 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
     }
 
     function stake(uint256 _tokenId) external nonReentrant updateReward(msg.sender) {
-        stakingToken.safeTransferFrom(msg.sender, address(this), _tokenId);
+        stakingToken.transferFrom(msg.sender, address(this), _tokenId);
         _stakedBy[_tokenId] = msg.sender;
 
         uint256 tokenScore = _score(_tokenId);
@@ -72,7 +72,7 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
         _scores[msg.sender] = _scores[msg.sender].sub(tokenScore);
 
         _stakedBy[_tokenId] = address(0);
-        stakingToken.safeTransferFrom(address(this), msg.sender, _tokenId);
+        stakingToken.transferFrom(address(this), msg.sender, _tokenId);
 
         emit Withdrawn(msg.sender, _tokenId, tokenScore);
     }
