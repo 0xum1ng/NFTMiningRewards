@@ -6,9 +6,9 @@ contract SimpleNFTMiningRewards is NFTMiningRewardsBase {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _rewardsDistribution, address _rewardsToken, address _stakingToken)
+    constructor(address _rewardsToken, address _stakingToken)
         public
-        NFTMiningRewardsBase(_rewardsDistribution, _rewardsToken, _stakingToken)
+        NFTMiningRewardsBase(msg.sender, _rewardsToken, _stakingToken)
     {
 
     }
