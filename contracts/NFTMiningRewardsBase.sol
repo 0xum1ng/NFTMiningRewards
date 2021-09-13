@@ -22,6 +22,7 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
     uint256 public lastUpdateTime;
     uint256 public rewardPerScoreStored;
 
+    address public governance;
     address public rewardsDistribution;
 
     mapping(address => uint256) public userRewardPerScorePaid;
@@ -52,6 +53,7 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC721(_stakingToken);
         rewardsDistribution = _rewardsDistribution;
+        governance = msg.sender;
     }
 
     /* ========== NFT MINING SPECIFIC FUNCTIONS ========== */
@@ -200,6 +202,14 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
         emit RewardAdded(reward);
     }
 
+    function setGovernance(address _governance) external onlyGov() {
+        governance = _governance;
+    }
+
+    function setRewardDistribution(address _rewardsDistribution) external onlyGov() {
+        rewardsDistribution = _rewardsDistribution;
+    }
+
     /* ========== MODIFIERS ========== */
 
     modifier updateReward(address account) {
@@ -214,6 +224,11 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
 
     modifier onlyRewardsDistribution() {
         require(msg.sender == rewardsDistribution, "Caller is not RewardsDistribution contract");
+        _;
+    }
+
+    modifier onlyGov() {
+        require(msg.sender == governance, "!gov");
         _;
     }
 
