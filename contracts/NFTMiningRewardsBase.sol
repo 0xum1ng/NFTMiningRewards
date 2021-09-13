@@ -58,6 +58,11 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
 
     /* ========== NFT MINING SPECIFIC FUNCTIONS ========== */
 
+    function tokenOfStakerByIndex(address _staker, uint256 _index) external view returns (uint256) {
+        require(_index < _balances[_staker], "Index out of bounds");
+        return _stakedTokens[_staker][_index];
+    }
+
     function totalScore() external view returns (uint256) {
         return _totalScore;
     }
