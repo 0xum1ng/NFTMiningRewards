@@ -27,9 +27,20 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
     mapping(address => uint256) public userRewardPerScorePaid;
     mapping(address => uint256) public rewards;
 
+    uint256 private _totalSupply;
+    mapping(address => uint256) private _balances;
+
+    /* ========== NFT MINING SPECIFIC VARIABLES ========== */
+
     uint256 private _totalScore;
     mapping(address => uint256) private _scores;
+
+    // Mapping from tokenId to staker
     mapping(uint256 => address) private _stakedBy;
+    // Mapping from staker to list of staked token IDs
+    mapping(address => mapping(uint256 => uint256)) private _stakedTokens;
+    // Mapping from token ID to index of the staker tokens list
+    mapping(uint256 => uint256) private _stakedTokensIndex;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -43,7 +54,15 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
         rewardsDistribution = _rewardsDistribution;
     }
 
-    /* ========== NFT Mining Specific Functions ========== */
+    /* ========== NFT MINING SPECIFIC FUNCTIONS ========== */
+
+    function totalScore() external view returns (uint256) {
+        return _totalScore;
+    }
+
+    function scoreOf(address account) external view returns (uint256) {
+        return _scores[account];
+    }
 
     // Token specific scoring function to return the score for a tokenId
     // To be implemented in implementation
@@ -54,9 +73,11 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
     }
 
     function stake(uint256 _tokenId) external nonReentrant updateReward(msg.sender) {
+        // Transfer token from owner and track ownership
         stakingToken.transferFrom(msg.sender, address(this), _tokenId);
-        _stakedBy[_tokenId] = msg.sender;
+        _addTokenToOwner(_tokenId, msg.sender);
 
+        // Update token score
         uint256 tokenScore = _score(_tokenId);
         _totalScore = _totalScore.add(tokenScore);
         _scores[msg.sender] = _scores[msg.sender].add(tokenScore);
@@ -67,24 +88,60 @@ abstract contract NFTMiningRewardsBase is ReentrancyGuard {
     function withdraw(uint256 _tokenId) public nonReentrant updateReward(msg.sender) {
         require(msg.sender == _stakedBy[_tokenId], "tokenId not staked by msg.sender");
 
+        // Update token score
         uint256 tokenScore = _score(_tokenId);
         _totalScore = _totalScore.sub(tokenScore);
         _scores[msg.sender] = _scores[msg.sender].sub(tokenScore);
 
-        _stakedBy[_tokenId] = address(0);
+        // Remove ownership and transfer token to msg.sender
+        _removeTokenFromOwner(_tokenId, msg.sender);
         stakingToken.transferFrom(address(this), msg.sender, _tokenId);
 
         emit Withdrawn(msg.sender, _tokenId, tokenScore);
     }
 
-    /* ========== VIEWS ========== */
+    function _addTokenToOwner(uint256 _tokenId, address _owner) internal {
+        uint256 length = _balances[_owner];
+        _stakedTokens[_owner][length] = _tokenId;
+        _stakedTokensIndex[_tokenId] = length;
 
-    function totalScore() external view returns (uint256) {
-        return _totalScore;
+        _totalSupply += 1;
+        _balances[_owner] += 1;
+        _stakedBy[_tokenId] = _owner;
     }
 
-    function balanceOf(address account) external view returns (uint256) {
-        return _scores[account];
+    function _removeTokenFromOwner(uint256 _tokenId, address _owner) internal {
+        // To prevent a gap in owner's tokens array, we store the last token in the index of the token to delete, and
+        // then delete the last slot (swap and pop).
+
+        uint256 lastTokenIndex = _balances[_owner] - 1;
+        uint256 tokenIndex = _stakedTokensIndex[_tokenId];
+
+        // When the token to delete is the last token, the swap operation is unnecessary
+        if (tokenIndex != lastTokenIndex) {
+            uint256 lastTokenId = _stakedTokens[_owner][lastTokenIndex];
+
+            _stakedTokens[_owner][tokenIndex] = lastTokenId; // Move the last token to the slot of the to-delete token
+            _stakedTokensIndex[lastTokenId] = tokenIndex; // Update the moved token's index
+        }
+
+        // This also deletes the contents at the last position of the array
+        delete _stakedTokensIndex[_tokenId];
+        delete _stakedTokens[_owner][lastTokenIndex];
+
+        _totalSupply -= 1;
+        _balances[_owner] -= 1;
+        _stakedBy[_tokenId] = address(0);
+    }
+
+    /* ========== VIEWS ========== */
+
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
+    }
+
+    function balanceOf(address owner) external view returns (uint256) {
+        return _balances[owner];
     }
 
     function lastTimeRewardApplicable() public view returns (uint256) {
