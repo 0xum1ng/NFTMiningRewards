@@ -19,6 +19,6 @@ contract SimpleNFTMiningRewards is NFTMiningRewardsBase {
         _tokenId; // avoid compiler warning
 
         // return same score for all tokenIds
-        return 100;
+        return 1000000000000000000;
     }
 }
